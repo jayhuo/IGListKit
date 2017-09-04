@@ -90,6 +90,7 @@
         // dump old registered section controllers in the case that we are changing collection views or setting for
         // the first time
         _registeredCellClasses = [NSMutableSet new];
+        _registeredIdentifiers = [NSMutableSet new];
         _registeredNibNames = [NSMutableSet new];
         _registeredSupplementaryViewIdentifiers = [NSMutableSet new];
         _registeredSupplementaryViewNibNames = [NSMutableSet new];
@@ -854,6 +855,24 @@
     IGParameterAssert(sectionController != nil);
     NSIndexPath *indexPath = [self indexPathForSectionController:sectionController index:index usePreviousIfInUpdateBlock:NO];
     [self.collectionView selectItemAtIndexPath:indexPath animated:animated scrollPosition:scrollPosition];
+}
+
+- (__kindof UICollectionViewCell *)dequeueReusableCellOfCustomIdentifier:(NSString *)identifier
+                                                               cellClass:(Class)cellClass
+                                                    forSectionController:(IGListSectionController *)sectionController
+                                                                 atIndex:(NSInteger)index {
+    IGAssertMainThread();
+    IGParameterAssert(sectionController != nil);
+    IGParameterAssert(identifier != nil);
+    IGParameterAssert(index >= 0);
+    UICollectionView *collectionView = self.collectionView;
+    IGAssert(collectionView != nil, @"Dequeueing cell of class %@ from section controller %@ without a collection view at index %zi", NSStringFromClass(cellClass), sectionController, index);
+    NSIndexPath *indexPath = [self indexPathForSectionController:sectionController index:index usePreviousIfInUpdateBlock:NO];
+    if (![self.registeredIdentifiers containsObject:identifier]) {
+      [self.registeredIdentifiers addObject:identifier];
+      [collectionView registerClass:cellClass forCellWithReuseIdentifier:identifier];
+    }
+    return [collectionView dequeueReusableCellWithReuseIdentifier:identifier forIndexPath:indexPath];
 }
 
 - (__kindof UICollectionViewCell *)dequeueReusableCellOfClass:(Class)cellClass
